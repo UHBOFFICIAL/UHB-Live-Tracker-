@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>UHB Live Lookup — Cyber Tech</title>
+
+  <style>
+    /* ---------- Theme & Layout ---------- */
+    :root{
+      --bg1: #0b1020;
+      --bg2: #0f1530;
+      --accent-a: #7afcff;
+      --accent-b: #b76bff;
+      --glass: rgba(255,255,255,0.06);
+      --muted: rgba(255,255,255,0.6);
+      --card-blur: 8px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; color:var(--muted); background:linear-gradient(180deg,var(--bg1),var(--bg2)); -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+    .page{max-width:1100px;margin:28px auto;padding:22px;position:relative;z-index:2}
+
+    /* ---------- Header ---------- */
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{
+      width:56px;height:56px;border-radius:12px;
+      background:linear-gradient(135deg,var(--accent-a),var(--accent-b));
+      display:flex;align-items:center;justify-content:center;font-weight:800;color:#061022;letter-spacing:1px;
+      box-shadow:0 10px 30px rgba(107,88,255,0.12);
+    }
+    h1{margin:0;font-size:18px;color:#e8faff}
+    .tag{font-size:13px;color:rgba(232,250,255,0.65)}
+
+    /* ---------- Controls ---------- */
+    .controls{display:flex;gap:12px;align-items:center;margin-top:6px;flex-wrap:wrap}
+    .input{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.05);
+      border-radius:10px;padding:12px 14px;color:#eaffff;min-width:280px;
+      backdrop-filter: blur(var(--card-blur));
+      font-weight:600;
+    }
+    .btn{
+      padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:800;
+      background:linear-gradient(90deg, rgba(122,252,255,0.08), rgba(183,107,255,0.06));
+      color:var(--accent-a);letter-spacing:0.5px;
+      box-shadow: 0 8px 30px rgba(123,92,255,0.06);
+    }
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+
+    /* ---------- Status area (typing + progress) ---------- */
+    .status{
+      margin-top:18px;padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      display:flex;flex-direction:column;gap:12px;backdrop-filter: blur(6px);
+    }
+    .typing{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;color:#eaffff;font-weight:700}
+    .typing .muted{font-weight:600;color:rgba(255,255,255,0.65)}
+    .progress-wrap{height:12px;background:rgba(255,255,255,0.03);border-radius:999px;overflow:hidden}
+    .progress{height:100%;width:0%;background:linear-gradient(90deg,var(--accent-a),var(--accent-b));transition:width .22s linear}
+
+    /* ---------- Results (glass cards) ---------- */
+    #results{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+    .card{
+      border-radius:12px;padding:14px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.03);backdrop-filter: blur(var(--card-blur));
+      box-shadow: 0 10px 30px rgba(6,16,40,0.45);
+    }
+    .field{font-size:12px;color:var(--accent-b);margin-bottom:6px}
+    .value{font-weight:800;color:#eaffff;word-break:break-word}
+
+    /* ---------- Footer (centered big WhatsApp buttons) ---------- */
+    footer{margin-top:28px;padding:22px;border-radius:12px;text-align:center;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));border:1px solid rgba(255,255,255,0.03)}
+    .signature{font-weight:800;color:rgba(232,250,255,0.7);margin-bottom:12px}
+    .footer-buttons{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+    .wa-btn{
+      display:inline-flex;align-items:center;gap:10px;padding:12px 22px;border-radius:14px;text-decoration:none;font-weight:900;
+      color:#04121a;background:linear-gradient(90deg,#e6fffb,#00b894);box-shadow:0 12px 40px rgba(0,184,148,0.12);
+      transition:transform .14s ease, box-shadow .14s ease;
+    }
+    .wa-btn.channel{background:linear-gradient(90deg,#ffd9ff,#b76bff);color:#1a0033;box-shadow:0 12px 40px rgba(183,107,255,0.12)}
+    .wa-btn:hover{transform:translateY(-6px);box-shadow:0 22px 60px rgba(0,0,0,0.4)}
+
+    /* ---------- Modal (glass + blur + smooth) ---------- */
+    .modal-backdrop{
+      position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(180deg, rgba(1,6,12,0.6), rgba(1,6,12,0.6));
+      z-index:80;opacity:0;pointer-events:none;transition:opacity .28s ease;
+      backdrop-filter: blur(6px);
+    }
+    .modal-backdrop.open{opacity:1;pointer-events:auto}
+    .modal{
+      width:92%;max-width:640px;border-radius:14px;padding:22px;background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+      border:1px solid rgba(255,255,255,0.04);box-shadow:0 30px 70px rgba(6,12,24,0.6);
+      transform: translateY(18px) scale(.995);transition:transform .35s cubic-bezier(.2,.9,.25,1);
+      backdrop-filter: blur(10px);
+    }
+    .modal-backdrop.open .modal{transform: translateY(0) scale(1)}
+    .modal h3{margin:0 0 10px 0;color:#eaffff;font-size:20px}
+    .modal p{margin:0 0 18px 0;color:rgba(232,250,255,0.8);line-height:1.45}
+    .modal .actions{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap}
+    .modal .btn{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:800}
+    .modal .btn.primary{background:linear-gradient(90deg,var(--accent-a),var(--accent-b));color:#061022}
+    .modal .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+
+    /* responsive */
+    @media (max-width:720px){
+      .controls{flex-direction:column;align-items:stretch}
+      .wa-btn{width:100%;justify-content:center}
+      header{flex-direction:column;align-items:flex-start;gap:8px}
+    }
+  </style>
+</head>
+<body>
+  <div class="page" role="main">
+    <header>
+      <div class="brand">
+        <div class="logo">UHB</div>
+        <div>
+          <h1>UHB Live Lookup</h1>
+          <div class="tag">Futuristic · Realtime · Clean</div>
+        </div>
+      </div>
+
+      <!-- small right info -->
+      <div style="text-align:right">
+        <div style="font-size:12px;color:rgba(232,250,255,0.55)">DEVOLVED BY UNKNOWN HACKER BOY</div>
+      </div>
+    </header>
+
+    <!-- controls -->
+    <div class="controls">
+      <input id="num" class="input" type="text" inputmode="tel" placeholder="+92XXXXXXXXXX — enter phone number" />
+      <button id="searchBtn" class="btn">🔎 Launch Scan</button>
+      <button id="demoBtn" class="btn secondary">Demo</button>
+    </div>
+
+    <!-- status -->
+    <div class="status" aria-live="polite">
+      <div class="typing" id="typedText">Ready. Enter a number and press <strong>Launch Scan</strong>.</div>
+      <div class="progress-wrap" aria-hidden="false">
+        <div id="progressBar" class="progress" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- results grid -->
+    <div id="results" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- footer: signature + centered big whatsapp buttons -->
+    <footer>
+      <div class="signature">DEVOLVED BY UNKNOWN HACKER BOY</div>
+
+      <div class="footer-buttons" style="margin-top:6px;">
+        <a class="wa-btn contact" id="waChat" href="https://wa.me/+923348734337" target="_blank" rel="noopener noreferrer">
+          📱 Contact Me
+        </a>
+        <a class="wa-btn channel" id="waChannel" href="https://whatsapp.com/channel/0029VaskVOHBqbr0Rzvg1Z2b" target="_blank" rel="noopener noreferrer">
+          🔗 Channel
+        </a>
+      </div>
+    </footer>
+  </div>
+
+  <!-- modal shown on start -->
+  <div id="welcomeModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <h3 id="modalTitle">Join Our WhatsApp Channel & Contact</h3>
+      <p style="margin-bottom:10px;">
+        Quick updates and direct contact. Open our WhatsApp channel for alerts or start a chat — choose an option below.
+      </p>
+
+      <div class="actions" style="margin-top:8px">
+        <a class="btn primary" href="https://whatsapp.com/channel/0029VaskVOHBqbr0Rzvg1Z2b" target="_blank" rel="noopener noreferrer">Open Channel</a>
+        <a class="btn primary" href="https://wa.me/+923348734337" target="_blank" rel="noopener noreferrer">Contact Me</a>
+        <button id="modalClose" class="btn ghost" type="button">Dismiss</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---------- Helper UI pieces ----------
+    const typedEl = document.getElementById('typedText');
+    const progressEl = document.getElementById('progressBar');
+    const resultsEl = document.getElementById('results');
+    const numInput = document.getElementById('num');
+
+    // typing effect function
+    async function typeText(node, text, speed = 20) {
+      node.innerHTML = '';
+      for (let i = 0; i < text.length; i++) {
+        node.innerHTML += text[i];
+        await new Promise(r => setTimeout(r, speed));
+      }
+    }
+
+    // progress setter
+    function setProgress(p) {
+      progressEl.style.width = Math.max(0, Math.min(100, p)) + '%';
+    }
+
+    // render records
+    function renderRecords(records) {
+      resultsEl.innerHTML = '';
+      if (!records || records.length === 0) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = '<div class="field">No records</div><div class="value">No data found for this number</div>';
+        resultsEl.appendChild(card);
+        return;
+      }
+
+      records.forEach(rec => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        // show key-value pairs
+        Object.keys(rec).forEach(k => {
+          const f = document.createElement('div');
+          f.className = 'field';
+          f.textContent = k;
+          const v = document.createElement('div');
+          v.className = 'value';
+          v.textContent = rec[k];
+          card.appendChild(f);
+          card.appendChild(v);
+        });
+        resultsEl.appendChild(card);
+      });
+    }
+
+    // ---------- Fetch & Scan logic ----------
+    async function doScan(number) {
+      if (!number) { alert('Please enter a phone number'); return; }
+      resultsEl.innerHTML = ''; setProgress(0);
+      await typeText(typedEl, 'Initializing scan for ' + number + ' ...', 14);
+
+      // simulated progress while fetching
+      let simulated = 0;
+      const simInterval = setInterval(() => { simulated = Math.min(85, simulated + Math.random() * 12); setProgress(simulated); }, 240);
+
+      try {
+        // safe abort if server stalls
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 22000);
+
+        await typeText(typedEl, 'Contacting remote database...', 12);
+        const resp = await fetch(`https://www.3patticenter.com/famofc/api/database.php?num=${encodeURIComponent(number)}`, { signal: controller.signal });
+        clearTimeout(timeout);
+
+        await typeText(typedEl, 'Receiving response...', 10);
+        const json = await resp.json();
+
+        clearInterval(simInterval);
+
+        // finish progress visually
+        for (let p = simulated; p <= 100; p += 4) {
+          setProgress(p);
+          // small pause for smoothness
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise(r => setTimeout(r, 18));
+        }
+
+        if (!json || json.status !== 'success') {
+          await typeText(typedEl, '❌ Scan failed: ' + (json?.message ?? 'Unknown error'), 12);
+          renderRecords([]);
+          return;
+        }
+
+        await typeText(typedEl, '✅ Scan complete. Rendering results...', 10);
+        const records = Array.isArray(json.data) ? json.data : [json.data];
+        renderRecords(records);
+
+      } catch (err) {
+        clearInterval(simInterval);
+        setProgress(0);
+        if (err.name === 'AbortError') {
+          await typeText(typedEl, '⚠️ Request timed out. Try again.', 12);
+        } else {
+          await typeText(typedEl, '⚠️ Error: ' + (err.message || 'Network error'), 12);
+        }
+        renderRecords([]);
+      }
+    }
+
+    // ---------- Buttons and events ----------
+    document.getElementById('searchBtn').addEventListener('click', () => doScan(numInput.value.trim()));
+    document.getElementById('demoBtn').addEventListener('click', () => {
+      const sample = ['+923001234567','03121234567','+447900123456'];
+      const pick = sample[Math.floor(Math.random() * sample.length)];
+      numInput.value = pick;
+      doScan(pick);
+    });
+    numInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('searchBtn').click(); });
+
+    // ---------- Modal handling ----------
+    const welcomeModal = document.getElementById('welcomeModal');
+    const modalClose = document.getElementById('modalClose');
+
+    function openModal() { welcomeModal.classList.add('open'); }
+    function closeModal() { welcomeModal.classList.remove('open'); }
+
+    modalClose.addEventListener('click', closeModal);
+    welcomeModal.addEventListener('click', (ev) => { if (ev.target === welcomeModal) closeModal(); });
+
+    // show modal once on page load with a tiny delay for smoother feel
+    window.addEventListener('load', () => {
+      setTimeout(() => openModal(), 420);
+      // also short intro typing
+      setTimeout(() => typeText(typedEl, 'System ready — enter number to scan.', 12), 900);
+    });
+
+    // Accessibility: focus trap / escape to close
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+
+  </script>
+</body>
+</html>

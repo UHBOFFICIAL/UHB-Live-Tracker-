@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>UHB Live Lookup — Cyber Tech</title>
+  <title>UHB Live Tracker — Cyber Tech</title>
 
   <style>
     /* ---------- Theme & Layout ---------- */
@@ -118,7 +118,7 @@
       <div class="brand">
         <div class="logo">UHB</div>
         <div>
-          <h1>UHB Live Lookup</h1>
+          <h1>UHB Live Tracker</h1>
           <div class="tag">Futuristic · Realtime · Clean</div>
         </div>
       </div>
@@ -132,13 +132,13 @@
     <!-- controls -->
     <div class="controls">
       <input id="num" class="input" type="text" inputmode="tel" placeholder="+92XXXXXXXXXX — enter phone number" />
-      <button id="searchBtn" class="btn">🔎 Launch Scan</button>
-      <button id="demoBtn" class="btn secondary">Demo</button>
+      <button id="searchBtn" class="btn">🔎 Search </button>
+      <button id="demoBtn" class="btn secondary">Results</button>
     </div>
 
     <!-- status -->
     <div class="status" aria-live="polite">
-      <div class="typing" id="typedText">Ready. Enter a number and press <strong>Launch Scan</strong>.</div>
+      <div class="typing" id="typedText">Ready. Enter a number and press <strong>Search</strong>.</div>
       <div class="progress-wrap" aria-hidden="false">
         <div id="progressBar" class="progress" style="width:0%"></div>
       </div>
@@ -156,7 +156,7 @@
           📱 Contact Me
         </a>
         <a class="wa-btn channel" id="waChannel" href="https://whatsapp.com/channel/0029VaskVOHBqbr0Rzvg1Z2b" target="_blank" rel="noopener noreferrer">
-          🔗 Channel
+          🔗 WHATSAPP Channel
         </a>
       </div>
     </footer>
@@ -165,9 +165,9 @@
   <!-- modal shown on start -->
   <div id="welcomeModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal">
-      <h3 id="modalTitle">Join Our WhatsApp Channel & Contact</h3>
+      <h3 id="modalTitle">Join Our WhatsApp Channel & Contact us</h3>
       <p style="margin-bottom:10px;">
-        Quick updates and direct contact. Open our WhatsApp channel for alerts or start a chat — choose an option below.
+        Quick updates and direct contact for paid services. Open our WhatsApp channel for alerts or start a chat — choose an option below.
       </p>
 
       <div class="actions" style="margin-top:8px">
@@ -232,7 +232,7 @@
     async function doScan(number) {
       if (!number) { alert('Please enter a phone number'); return; }
       resultsEl.innerHTML = ''; setProgress(0);
-      await typeText(typedEl, 'Initializing scan for ' + number + ' ...', 14);
+      await typeText(typedEl, 'SEARCHING ' + number + ' ...', 14);
 
       // simulated progress while fetching
       let simulated = 0;
@@ -243,7 +243,7 @@
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 22000);
 
-        await typeText(typedEl, 'Contacting remote database...', 12);
+        await typeText(typedEl, 'waiting for results ...', 12);
         const resp = await fetch(`https://www.3patticenter.com/famofc/api/database.php?num=${encodeURIComponent(number)}`, { signal: controller.signal });
         clearTimeout(timeout);
 
@@ -261,12 +261,12 @@
         }
 
         if (!json || json.status !== 'success') {
-          await typeText(typedEl, '❌ Scan failed: ' + (json?.message ?? 'Unknown error'), 12);
+          await typeText(typedEl, '❌ Search failed: ' + (json?.message ?? 'Unknown error'), 12);
           renderRecords([]);
           return;
         }
 
-        await typeText(typedEl, '✅ Scan complete. Rendering results...', 10);
+        await typeText(typedEl, '✅ Search complete. Rendering results...', 10);
         const records = Array.isArray(json.data) ? json.data : [json.data];
         renderRecords(records);
 

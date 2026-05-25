@@ -173,23 +173,21 @@
   </div>
 
   <script>
-    // ---------- Helper UI pieces ----------
     const typedEl = document.getElementById('typedText');
     const progressEl = document.getElementById('progressBar');
     const resultsEl = document.getElementById('results');
     const numInput = document.getElementById('num');
 
-    // Aapka Main API Database URL
+    // Aapki Main API URL
     const TARGET_API = "https://fam-official.serv00.net/api/database.php?number=";
 
-    // Masla hal karne ke liye 3 mukhtalif Proxy Servers ki list
+    // Fixed & Reliable Proxies List
     const PROXY_LIST = [
-      "https://api.allorigins.win/get?url=",                 // Proxy 1 (AllOrigins)
-      "https://corsproxy.io/?",                              // Proxy 2 (CorsProxy.io)
-      "https://thingproxy.freeboard.io/fetch/"               // Proxy 3 (ThingProxy)
+      "https://api.allorigins.win/get?url=",
+      "https://corsproxy.io/?",
+      "https://thingproxy.freeboard.io/fetch/"
     ];
 
-    // typing effect function
     async function typeText(node, text, speed = 20) {
       node.innerHTML = '';
       for (let i = 0; i < text.length; i++) {
@@ -198,15 +196,13 @@
       }
     }
 
-    // progress setter
     function setProgress(p) {
       progressEl.style.width = Math.max(0, Math.min(100, p)) + '%';
     }
 
-    // render records
     function renderRecords(records) {
       resultsEl.innerHTML = '';
-      if (!records || records.length === 0) {
+      if (!records || records.length === 0 || (records.length === 1 && Object.keys(records[0]).length === 0)) {
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = '<div class="field">No records</div><div class="value">No data found for this number</div>';
@@ -215,12 +211,13 @@
       }
 
       records.forEach(rec => {
+        if (!rec || Object.keys(rec).length === 0) return;
         const card = document.createElement('div');
         card.className = 'card';
         Object.keys(rec).forEach(k => {
           const f = document.createElement('div');
           f.className = 'field';
-          f.textContent = k;
+          f.textContent = k.toUpperCase();
           const v = document.createElement('div');
           v.className = 'value';
           v.textContent = rec[k];
@@ -231,78 +228,99 @@
       });
     }
 
-    // ---------- Fetch & Scan logic via Proxies ----------
     async function doScan(number) {
       if (!number) { alert('Please enter a phone number'); return; }
       resultsEl.innerHTML = ''; setProgress(0);
-      await typeText(typedEl, 'CONNECTING SECURE TUNNEL FOR ' + number + ' ...', 14);
+      await typeText(typedEl, 'INITIALIZING SECURE PROXY TUNNEL...', 14);
 
-      // simulated progress
       let simulated = 0;
       const simInterval = setInterval(() => { simulated = Math.min(85, simulated + Math.random() * 12); setProgress(simulated); }, 240);
 
       let success = false;
       let finalData = null;
-      let finalError = "Connection failed";
+      let finalError = "No response from database";
       
       const fullTargetUrl = TARGET_API + encodeURIComponent(number);
 
-      // Pehle Direct koshish karega, agar masla aya to baari baari saari proxies try karega
+      // 4 Automated Routes (Direct + 3 Proxies)
       const executionRoutes = [
-        { name: "Direct Server Connection", url: fullTargetUrl, type: "direct" },
-        { name: "Cyber Proxy Route Alpha", url: PROXY_LIST[0] + encodeURIComponent(fullTargetUrl), type: "allorigins" },
-        { name: "Cyber Proxy Route Bravo", url: PROXY_LIST[1] + fullTargetUrl, type: "direct_json" },
-        { name: "Cyber Proxy Route Charlie", url: PROXY_LIST[2] + fullTargetUrl, type: "direct_json" }
+        { name: "Direct Connection", url: fullTargetUrl, type: "direct" },
+        { name: "Proxy Alpha (AllOrigins)", url: PROXY_LIST[0] + encodeURIComponent(fullTargetUrl), type: "allorigins" },
+        { name: "Proxy Bravo (CorsProxy)", url: PROXY_LIST[1] + encodeURIComponent(fullTargetUrl), type: "direct_json" },
+        { name: "Proxy Charlie (ThingProxy)", url: PROXY_LIST[2] + fullTargetUrl, type: "direct_json" }
       ];
 
       for (let i = 0; i < executionRoutes.length; i++) {
         const route = executionRoutes[i];
         try {
-          await typeText(typedEl, `Bypassing restrictions via [${route.name}]...`, 12);
+          await typeText(typedEl, `Fetching via: ${route.name}...`, 12);
 
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 9000); // 9 seconds timeout per proxy
+          const timeout = setTimeout(() => controller.abort(), 10000); // 10s Timeout
 
           const resp = await fetch(route.url, { signal: controller.signal });
           clearTimeout(timeout);
 
-          if (!resp.ok) throw new Error(`Status ${resp.status}`);
+          if (!resp.ok) throw new Error(`HTTP Error ${resp.status}`);
           
-          let json = await resp.json();
+          let resData = await resp.text(); // Raw text read karein taaki parsing crash na ho
+          let json = null;
 
-          // Baaz proxies (jaise AllOrigins) data ko lapet (wrap) deti hain, unhein handle karne ke liye:
-          if (route.type === "allorigins") {
-            json = JSON.parse(json.contents);
+          try {
+            json = JSON.parse(resData);
+          } catch(e) {
+            throw new Error("Invalid JSON formatting received");
           }
 
-          if (json && json.status === 'success') {
-            finalData = json.data;
-            success = true;
-            break; // Data mil gaya! Loop khatam.
-          } else {
-            throw new Error(json?.message || "Data mismatch or empty result");
+          // Proxy Alpha ke response ko unpack karne ka tarika
+          if (route.type === "allorigins" && json.contents) {
+            try {
+              json = JSON.parse(json.contents);
+            } catch(e) {
+              throw new Error("Failed to unpack proxy capsule");
+            }
+          }
+
+          // Data Extraction Check (Alag alag APIs ke data format ko automate karne ke liye)
+          if (json) {
+            if (json.status === 'success' || json.data) {
+              finalData = json.data || json;
+              success = true;
+              break; 
+            } else if (Array.isArray(json)) {
+              finalData = json;
+              success = true;
+              break;
+            }
           }
 
         } catch (err) {
-          console.error(`${route.name} failed:`, err.message);
+          console.warn(`${route.name} failed:`, err.message);
           finalError = err.message;
-          // Agli proxy par shift ho jayega khud hi
         }
       }
 
       clearInterval(simInterval);
 
       if (success) {
-        for (let p = simulated; p <= 100; p += 4) {
+        for (let p = simulated; p <= 100; p += 5) {
           setProgress(p);
           await new Promise(r => setTimeout(r, 15));
         }
-        await typeText(typedEl, '✅ Bypass successful. Injecting results...', 10);
-        const records = Array.isArray(finalData) ? finalData : [finalData];
+        await typeText(typedEl, '✅ System Success! Injecting records...', 10);
+        
+        // Data ko Array format mein convert karna agar woh Object ho
+        let records = [];
+        if (Array.isArray(finalData)) {
+          records = finalData;
+        } else if (typeof finalData === 'object' && finalData !== null) {
+          records = [finalData];
+        }
+        
         renderRecords(records);
       } else {
         setProgress(0);
-        await typeText(typedEl, '❌ All proxies blocked or server offline. Error: ' + finalError, 12);
+        await typeText(typedEl, '❌ Network Error: ' + finalError, 12);
         renderRecords([]);
       }
     }

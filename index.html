@@ -123,20 +123,17 @@
         </div>
       </div>
 
-      <!-- small right info -->
       <div style="text-align:right">
         <div style="font-size:12px;color:rgba(232,250,255,0.55)">DEVOLVED BY UNKNOWN HACKER BOY</div>
       </div>
     </header>
 
-    <!-- controls -->
     <div class="controls">
       <input id="num" class="input" type="text" inputmode="tel" placeholder="+92XXXXXXXXXX — enter phone number" />
       <button id="searchBtn" class="btn">🔎 Search </button>
       <button id="demoBtn" class="btn secondary">Results</button>
     </div>
 
-    <!-- status -->
     <div class="status" aria-live="polite">
       <div class="typing" id="typedText">Ready. Enter a number and press <strong>Search</strong>.</div>
       <div class="progress-wrap" aria-hidden="false">
@@ -144,10 +141,8 @@
       </div>
     </div>
 
-    <!-- results grid -->
     <div id="results" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- footer: signature + centered big whatsapp buttons -->
     <footer>
       <div class="signature">DEVOLVED BY UNKNOWN HACKER BOY</div>
 
@@ -162,7 +157,6 @@
     </footer>
   </div>
 
-  <!-- modal shown on start -->
   <div id="welcomeModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal">
       <h3 id="modalTitle">Join Our WhatsApp Channel & Contact us</h3>
@@ -184,6 +178,16 @@
     const progressEl = document.getElementById('progressBar');
     const resultsEl = document.getElementById('results');
     const numInput = document.getElementById('num');
+
+    // Aapka Main API Database URL
+    const TARGET_API = "https://fam-official.serv00.net/api/database.php?number=";
+
+    // Masla hal karne ke liye 3 mukhtalif Proxy Servers ki list
+    const PROXY_LIST = [
+      "https://api.allorigins.win/get?url=",                 // Proxy 1 (AllOrigins)
+      "https://corsproxy.io/?",                              // Proxy 2 (CorsProxy.io)
+      "https://thingproxy.freeboard.io/fetch/"               // Proxy 3 (ThingProxy)
+    ];
 
     // typing effect function
     async function typeText(node, text, speed = 20) {
@@ -213,7 +217,6 @@
       records.forEach(rec => {
         const card = document.createElement('div');
         card.className = 'card';
-        // show key-value pairs
         Object.keys(rec).forEach(k => {
           const f = document.createElement('div');
           f.className = 'field';
@@ -228,56 +231,78 @@
       });
     }
 
-    // ---------- Fetch & Scan logic ----------
+    // ---------- Fetch & Scan logic via Proxies ----------
     async function doScan(number) {
       if (!number) { alert('Please enter a phone number'); return; }
       resultsEl.innerHTML = ''; setProgress(0);
-      await typeText(typedEl, 'SEARCHING ' + number + ' ...', 14);
+      await typeText(typedEl, 'CONNECTING SECURE TUNNEL FOR ' + number + ' ...', 14);
 
-      // simulated progress while fetching
+      // simulated progress
       let simulated = 0;
       const simInterval = setInterval(() => { simulated = Math.min(85, simulated + Math.random() * 12); setProgress(simulated); }, 240);
 
-      try {
-        // safe abort if server stalls
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 22000);
+      let success = false;
+      let finalData = null;
+      let finalError = "Connection failed";
+      
+      const fullTargetUrl = TARGET_API + encodeURIComponent(number);
 
-        await typeText(typedEl, 'waiting for results ...', 12);
-        const resp = await fetch(`https://fam-official.serv00.net/api/database.php?number=${encodeURIComponent(number)}`, { signal: controller.signal });
-        clearTimeout(timeout);
+      // Pehle Direct koshish karega, agar masla aya to baari baari saari proxies try karega
+      const executionRoutes = [
+        { name: "Direct Server Connection", url: fullTargetUrl, type: "direct" },
+        { name: "Cyber Proxy Route Alpha", url: PROXY_LIST[0] + encodeURIComponent(fullTargetUrl), type: "allorigins" },
+        { name: "Cyber Proxy Route Bravo", url: PROXY_LIST[1] + fullTargetUrl, type: "direct_json" },
+        { name: "Cyber Proxy Route Charlie", url: PROXY_LIST[2] + fullTargetUrl, type: "direct_json" }
+      ];
 
-        await typeText(typedEl, 'Receiving response...', 10);
-        const json = await resp.json();
+      for (let i = 0; i < executionRoutes.length; i++) {
+        const route = executionRoutes[i];
+        try {
+          await typeText(typedEl, `Bypassing restrictions via [${route.name}]...`, 12);
 
-        clearInterval(simInterval);
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 9000); // 9 seconds timeout per proxy
 
-        // finish progress visually
+          const resp = await fetch(route.url, { signal: controller.signal });
+          clearTimeout(timeout);
+
+          if (!resp.ok) throw new Error(`Status ${resp.status}`);
+          
+          let json = await resp.json();
+
+          // Baaz proxies (jaise AllOrigins) data ko lapet (wrap) deti hain, unhein handle karne ke liye:
+          if (route.type === "allorigins") {
+            json = JSON.parse(json.contents);
+          }
+
+          if (json && json.status === 'success') {
+            finalData = json.data;
+            success = true;
+            break; // Data mil gaya! Loop khatam.
+          } else {
+            throw new Error(json?.message || "Data mismatch or empty result");
+          }
+
+        } catch (err) {
+          console.error(`${route.name} failed:`, err.message);
+          finalError = err.message;
+          // Agli proxy par shift ho jayega khud hi
+        }
+      }
+
+      clearInterval(simInterval);
+
+      if (success) {
         for (let p = simulated; p <= 100; p += 4) {
           setProgress(p);
-          // small pause for smoothness
-          // eslint-disable-next-line no-await-in-loop
-          await new Promise(r => setTimeout(r, 18));
+          await new Promise(r => setTimeout(r, 15));
         }
-
-        if (!json || json.status !== 'success') {
-          await typeText(typedEl, '❌ Search failed: ' + (json?.message ?? 'Unknown error'), 12);
-          renderRecords([]);
-          return;
-        }
-
-        await typeText(typedEl, '✅ Search complete. Rendering results...', 10);
-        const records = Array.isArray(json.data) ? json.data : [json.data];
+        await typeText(typedEl, '✅ Bypass successful. Injecting results...', 10);
+        const records = Array.isArray(finalData) ? finalData : [finalData];
         renderRecords(records);
-
-      } catch (err) {
-        clearInterval(simInterval);
+      } else {
         setProgress(0);
-        if (err.name === 'AbortError') {
-          await typeText(typedEl, '⚠️ Request timed out. Try again.', 12);
-        } else {
-          await typeText(typedEl, '⚠️ Error: ' + (err.message || 'Network error'), 12);
-        }
+        await typeText(typedEl, '❌ All proxies blocked or server offline. Error: ' + finalError, 12);
         renderRecords([]);
       }
     }
@@ -302,18 +327,14 @@
     modalClose.addEventListener('click', closeModal);
     welcomeModal.addEventListener('click', (ev) => { if (ev.target === welcomeModal) closeModal(); });
 
-    // show modal once on page load with a tiny delay for smoother feel
     window.addEventListener('load', () => {
       setTimeout(() => openModal(), 420);
-      // also short intro typing
-      setTimeout(() => typeText(typedEl, 'System ready — enter number to scan.', 12), 900);
+      setTimeout(() => typeText(typedEl, 'System ready — proxy tunnel active.', 12), 900);
     });
 
-    // Accessibility: focus trap / escape to close
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closeModal();
     });
-
   </script>
 </body>
-  </html>
+</html>

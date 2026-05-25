@@ -61,14 +61,21 @@
     .progress{height:100%;width:0%;background:linear-gradient(90deg,var(--accent-a),var(--accent-b));transition:width .22s linear}
 
     /* ---------- Results (glass cards) ---------- */
-    #results{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+    #results{margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
     .card{
-      border-radius:12px;padding:14px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border:1px solid rgba(255,255,255,0.03);backdrop-filter: blur(var(--card-blur));
-      box-shadow: 0 10px 30px rgba(6,16,40,0.45);
+      border-radius:14px;padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+      border:1px solid rgba(255,255,255,0.04);backdrop-filter: blur(var(--card-blur));
+      box-shadow: 0 15px 35px rgba(6,16,40,0.5);
+      display: flex; flex-direction: column; gap: 12px;
     }
-    .field{font-size:12px;color:var(--accent-b);margin-bottom:6px}
-    .value{font-weight:800;color:#eaffff;word-break:break-word}
+    .result-row {
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      padding-bottom: 8px;
+    }
+    .result-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .field{font-size:11px;color:var(--accent-b);font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+    .value{font-weight:700;color:#eaffff;word-break:break-word;font-size:15px}
+    .value.highlight { color: var(--accent-a); font-family: monospace; }
 
     /* ---------- Footer (centered big WhatsApp buttons) ---------- */
     footer{margin-top:28px;padding:22px;border-radius:12px;text-align:center;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));border:1px solid rgba(255,255,255,0.03)}
@@ -82,7 +89,7 @@
     .wa-btn.channel{background:linear-gradient(90deg,#ffd9ff,#b76bff);color:#1a0033;box-shadow:0 12px 40px rgba(183,107,255,0.12)}
     .wa-btn:hover{transform:translateY(-6px);box-shadow:0 22px 60px rgba(0,0,0,0.4)}
 
-    /* ---------- Modal (glass + blur + smooth) ---------- */
+    /* ---------- Modal ---------- */
     .modal-backdrop{
       position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
       background:linear-gradient(180deg, rgba(1,6,12,0.6), rgba(1,6,12,0.6));
@@ -104,7 +111,6 @@
     .modal .btn.primary{background:linear-gradient(90deg,var(--accent-a),var(--accent-b));color:#061022}
     .modal .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
 
-    /* responsive */
     @media (max-width:720px){
       .controls{flex-direction:column;align-items:stretch}
       .wa-btn{width:100%;justify-content:center}
@@ -122,7 +128,6 @@
           <div class="tag">Futuristic · Realtime · Clean</div>
         </div>
       </div>
-
       <div style="text-align:right">
         <div style="font-size:12px;color:rgba(232,250,255,0.55)">DEVOLVED BY UNKNOWN HACKER BOY</div>
       </div>
@@ -145,14 +150,9 @@
 
     <footer>
       <div class="signature">DEVOLVED BY UNKNOWN HACKER BOY</div>
-
       <div class="footer-buttons" style="margin-top:6px;">
-        <a class="wa-btn contact" id="waChat" href="https://wa.me/+923348734337" target="_blank" rel="noopener noreferrer">
-          📱 Contact Me
-        </a>
-        <a class="wa-btn channel" id="waChannel" href="https://whatsapp.com/channel/0029VaskVOHBqbr0Rzvg1Z2b" target="_blank" rel="noopener noreferrer">
-          🔗 WHATSAPP Channel
-        </a>
+        <a class="wa-btn contact" id="waChat" href="https://wa.me/+923348734337" target="_blank" rel="noopener noreferrer">📱 Contact Me</a>
+        <a class="wa-btn channel" id="waChannel" href="https://whatsapp.com/channel/0029VaskVOHBqbr0Rzvg1Z2b" target="_blank" rel="noopener noreferrer">🔗 WHATSAPP Channel</a>
       </div>
     </footer>
   </div>
@@ -160,10 +160,7 @@
   <div id="welcomeModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal">
       <h3 id="modalTitle">Join Our WhatsApp Channel & Contact us</h3>
-      <p style="margin-bottom:10px;">
-        Quick updates and direct contact for paid services. Open our WhatsApp channel for alerts or start a chat — choose an option below.
-      </p>
-
+      <p style="margin-bottom:10px;">Quick updates and direct contact for paid services. Open our WhatsApp channel for alerts or start a chat.</p>
       <div class="actions" style="margin-top:8px">
         <a class="btn primary" href="https://whatsapp.com/channel/0029VaskVOHBqbr0Rzvg1Z2b" target="_blank" rel="noopener noreferrer">Open Channel</a>
         <a class="btn primary" href="https://wa.me/+923348734337" target="_blank" rel="noopener noreferrer">Contact Me</a>
@@ -178,10 +175,8 @@
     const resultsEl = document.getElementById('results');
     const numInput = document.getElementById('num');
 
-    // Aapki Main API URL
     const TARGET_API = "https://fam-official.serv00.net/api/database.php?number=";
 
-    // Fixed & Reliable Proxies List
     const PROXY_LIST = [
       "https://api.allorigins.win/get?url=",
       "https://corsproxy.io/?",
@@ -200,30 +195,49 @@
       progressEl.style.width = Math.max(0, Math.min(100, p)) + '%';
     }
 
+    // ---------- Fixed Rendering Filter for Name, CNIC, Address ----------
     function renderRecords(records) {
       resultsEl.innerHTML = '';
+      
       if (!records || records.length === 0 || (records.length === 1 && Object.keys(records[0]).length === 0)) {
         const card = document.createElement('div');
         card.className = 'card';
-        card.innerHTML = '<div class="field">No records</div><div class="value">No data found for this number</div>';
+        card.innerHTML = '<div class="field">System Alert</div><div class="value">No records found for this specific query.</div>';
         resultsEl.appendChild(card);
         return;
       }
 
       records.forEach(rec => {
         if (!rec || Object.keys(rec).length === 0) return;
+
+        // Aapke database columns ke mutabiq smart mapping 
+        // (Agar backend pe name, full_name, cnic ya address kuch bhi ho, yeh pakad lega)
+        const name = rec.name || rec.NAME || rec.full_name || rec.Full_Name || "NOT FOUND";
+        const cnic = rec.cnic || rec.CNIC || rec.cnic_num || rec.identity_no || "NOT FOUND";
+        const phone = rec.phone || rec.PHONE || rec.mobile || rec.number || "NOT FOUND";
+        const address = rec.address || rec.ADDRESS || rec.current_address || rec.home_address || "NOT FOUND";
+
         const card = document.createElement('div');
         card.className = 'card';
-        Object.keys(rec).forEach(k => {
-          const f = document.createElement('div');
-          f.className = 'field';
-          f.textContent = k.toUpperCase();
-          const v = document.createElement('div');
-          v.className = 'value';
-          v.textContent = rec[k];
-          card.appendChild(f);
-          card.appendChild(v);
-        });
+
+        card.innerHTML = `
+          <div class="result-row">
+            <div class="field">👤 FULL NAME</div>
+            <div class="value">${name}</div>
+          </div>
+          <div class="result-row">
+            <div class="field">💳 CNIC NUMBER</div>
+            <div class="value highlight">${cnic}</div>
+          </div>
+          <div class="result-row">
+            <div class="field">📞 PHONE NUMBER</div>
+            <div class="value highlight">${phone}</div>
+          </div>
+          <div class="result-row">
+            <div class="field">🏠 LOCAL ADDRESS</div>
+            <div class="value">${address}</div>
+          </div>
+        `;
         resultsEl.appendChild(card);
       });
     }
@@ -231,18 +245,17 @@
     async function doScan(number) {
       if (!number) { alert('Please enter a phone number'); return; }
       resultsEl.innerHTML = ''; setProgress(0);
-      await typeText(typedEl, 'INITIALIZING SECURE PROXY TUNNEL...', 14);
+      await typeText(typedEl, 'INITIALIZING EXTRACTION PROTOCOL...', 14);
 
       let simulated = 0;
       const simInterval = setInterval(() => { simulated = Math.min(85, simulated + Math.random() * 12); setProgress(simulated); }, 240);
 
       let success = false;
       let finalData = null;
-      let finalError = "No response from database";
+      let finalError = "No connection with database node";
       
       const fullTargetUrl = TARGET_API + encodeURIComponent(number);
 
-      // 4 Automated Routes (Direct + 3 Proxies)
       const executionRoutes = [
         { name: "Direct Connection", url: fullTargetUrl, type: "direct" },
         { name: "Proxy Alpha (AllOrigins)", url: PROXY_LIST[0] + encodeURIComponent(fullTargetUrl), type: "allorigins" },
@@ -253,35 +266,25 @@
       for (let i = 0; i < executionRoutes.length; i++) {
         const route = executionRoutes[i];
         try {
-          await typeText(typedEl, `Fetching via: ${route.name}...`, 12);
+          await typeText(typedEl, `Routing secure data via: ${route.name}...`, 12);
 
           const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 10000); // 10s Timeout
+          const timeout = setTimeout(() => controller.abort(), 10000);
 
           const resp = await fetch(route.url, { signal: controller.signal });
           clearTimeout(timeout);
 
           if (!resp.ok) throw new Error(`HTTP Error ${resp.status}`);
           
-          let resData = await resp.text(); // Raw text read karein taaki parsing crash na ho
+          let resData = await resp.text();
           let json = null;
 
-          try {
-            json = JSON.parse(resData);
-          } catch(e) {
-            throw new Error("Invalid JSON formatting received");
-          }
+          try { json = JSON.parse(resData); } catch(e) { throw new Error("JSON formatting broken"); }
 
-          // Proxy Alpha ke response ko unpack karne ka tarika
           if (route.type === "allorigins" && json.contents) {
-            try {
-              json = JSON.parse(json.contents);
-            } catch(e) {
-              throw new Error("Failed to unpack proxy capsule");
-            }
+            try { json = JSON.parse(json.contents); } catch(e) { throw new Error("Proxy decryption failed"); }
           }
 
-          // Data Extraction Check (Alag alag APIs ke data format ko automate karne ke liye)
           if (json) {
             if (json.status === 'success' || json.data) {
               finalData = json.data || json;
@@ -293,7 +296,6 @@
               break;
             }
           }
-
         } catch (err) {
           console.warn(`${route.name} failed:`, err.message);
           finalError = err.message;
@@ -307,9 +309,8 @@
           setProgress(p);
           await new Promise(r => setTimeout(r, 15));
         }
-        await typeText(typedEl, '✅ System Success! Injecting records...', 10);
+        await typeText(typedEl, '✅ Bypass Success! Rendering targeted records...', 10);
         
-        // Data ko Array format mein convert karna agar woh Object ho
         let records = [];
         if (Array.isArray(finalData)) {
           records = finalData;
@@ -320,7 +321,7 @@
         renderRecords(records);
       } else {
         setProgress(0);
-        await typeText(typedEl, '❌ Network Error: ' + finalError, 12);
+        await typeText(typedEl, '❌ Extraction Error: ' + finalError, 12);
         renderRecords([]);
       }
     }
@@ -328,14 +329,13 @@
     // ---------- Buttons and events ----------
     document.getElementById('searchBtn').addEventListener('click', () => doScan(numInput.value.trim()));
     document.getElementById('demoBtn').addEventListener('click', () => {
-      const sample = ['+923001234567','03121234567','+447900123456'];
+      const sample = ['+923001234567','03121234567'];
       const pick = sample[Math.floor(Math.random() * sample.length)];
       numInput.value = pick;
       doScan(pick);
     });
     numInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('searchBtn').click(); });
 
-    // ---------- Modal handling ----------
     const welcomeModal = document.getElementById('welcomeModal');
     const modalClose = document.getElementById('modalClose');
 
@@ -350,9 +350,7 @@
       setTimeout(() => typeText(typedEl, 'System ready — proxy tunnel active.', 12), 900);
     });
 
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') closeModal();
-    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
   </script>
 </body>
 </html>

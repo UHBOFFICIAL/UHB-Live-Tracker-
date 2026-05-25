@@ -244,7 +244,7 @@
         const timeout = setTimeout(() => controller.abort(), 22000);
 
         await typeText(typedEl, 'waiting for results ...', 12);
-        const resp = await fetch(`https://www.3patticenter.com/famofc/api/database.php?num=${encodeURIComponent(number)}`, { signal: controller.signal });
+        const resp = await fetch(`https://fam-official.serv00.net/api/database.php?number=${encodeURIComponent(number)}`, { signal: controller.signal });
         clearTimeout(timeout);
 
         await typeText(typedEl, 'Receiving response...', 10);
